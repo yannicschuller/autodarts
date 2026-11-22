@@ -79,9 +79,41 @@ usermod -aG video,render,audio,input "$KIOSK_USER" 2>/dev/null || true
 if [[ "${SKIP_AUTODARTS:-0}" != "1" ]]; then
   c_info "Autodarts Board-Client installieren (offizieller Installer)"
   # Läuft als der Kiosk-Benutzer, damit der Dienst nicht als root läuft.
-  sudo -u "$KIOSK_USER" -H bash -c 'bash <(curl -sL https://get.autodarts.io)'
-  systemctl enable autodarts.service 2>/dev/null || true
-  c_ok "Autodarts installiert (Board Manager: http://<IP-des-PCs>:3180)"
+  sudo -u "$KIOSK_USER" -H bash -c 'bash <(curl -sL https://get.autodarts.io)' \
+    || c_warn "Autodarts-Installer meldete einen Fehler – prüfe gleich den Dienst."
+
+  # Der offizielle Installer legt den Systemdienst nicht immer an (z. B. wenn er
+  # innerhalb von sudo keine Rechte bekommt). Dann legen wir ihn selbst an.
+  AD_BIN=""
+  for cand in "$KIOSK_HOME/.local/bin/autodarts" /usr/local/bin/autodarts; do
+    [[ -x "$cand" ]] && { AD_BIN="$cand"; break; }
+  done
+  [[ -n "$AD_BIN" ]] || die "Autodarts-Programm nicht gefunden – Installer fehlgeschlagen?"
+
+  # Eventuellen Benutzer-Dienst abschalten, damit Autodarts nicht doppelt läuft
+  sudo -u "$KIOSK_USER" XDG_RUNTIME_DIR="/run/user/$(id -u "$KIOSK_USER")" \
+    systemctl --user disable --now autodarts.service >/dev/null 2>&1 || true
+
+  cat > /etc/systemd/system/autodarts.service <<EOF
+[Unit]
+Description=Autodarts Board-Client
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=$KIOSK_USER
+ExecStart=$AD_BIN
+Restart=on-failure
+RestartSec=5s
+KillSignal=SIGINT
+
+[Install]
+WantedBy=multi-user.target
+EOF
+  systemctl daemon-reload
+  systemctl enable autodarts.service
+  systemctl restart autodarts.service
+  c_ok "Autodarts läuft als Dienst (Board Manager: http://<IP-des-PCs>:3180)"
 else
   c_warn "Autodarts-Installation übersprungen (SKIP_AUTODARTS=1)"
 fi
