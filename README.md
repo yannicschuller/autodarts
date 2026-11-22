@@ -1,6 +1,6 @@
 # Autodarts Kiosk
 
-Macht aus einem kleinen PC (getestet für **Dell OptiPlex 3070 Micro**) eine Autodarts-Maschine, die:
+Macht aus einem kleinen PC (eingerichtet für einen **Fujitsu ESPRIMO G558**) eine Autodarts-Maschine, die:
 
 - beim Anlegen von Strom automatisch einschaltet,
 - mit eigenem Boot-Logo und ohne Textausgabe startet,
@@ -18,7 +18,7 @@ Chromium ist unter Debian ein normales Paket (unter Ubuntu ein Snap, der im Kios
 ### 1.1 Was du brauchst
 
 - USB-Stick (mind. 2 GB, wird gelöscht)
-- Tastatur + Monitor am OptiPlex (nur für die Installation)
+- Tastatur + Monitor am ESPRIMO (nur für die Installation)
 - Am besten **LAN-Kabel** (WLAN geht auch, ist aber umständlicher)
 
 ### 1.2 USB-Stick erstellen
@@ -26,24 +26,30 @@ Chromium ist unter Debian ein normales Paket (unter Ubuntu ein Snap, der im Kios
 1. **Debian netinst ISO (amd64)** herunterladen: <https://www.debian.org/download>
 2. Auf den USB-Stick schreiben mit [balenaEtcher](https://etcher.balena.io/) (Windows/macOS/Linux) oder [Rufus](https://rufus.ie/) (Windows, Modus „DD-Image“).
 
-### 1.3 BIOS vorbereiten (OptiPlex 3070)
+### 1.3 BIOS vorbereiten (ESPRIMO G558)
 
-Beim Einschalten **F2** drücken:
+Beim Einschalten, sobald das Fujitsu-Logo erscheint, **F2** mehrmals drücken
+(bei 60-%-Tastaturen ohne F-Reihe meist **Fn + 2**):
 
 | Einstellung | Pfad | Wert |
 |---|---|---|
-| **Einschalten bei Strom** | Power Management → **AC Recovery** | **Power On** |
-| SSD für Linux sichtbar machen | System Configuration → **SATA Operation** | **AHCI** (nicht „RAID On“) |
-| Secure Boot | Secure Boot → Secure Boot Enable | **aus** (nur nötig, falls du später den UVC-Hack brauchst) |
-| Schnellerer Start (optional) | POST Behavior → **Fastboot** | **Minimal** |
+| **Einschalten bei Strom** | Power → **Power Failure Recovery** | **Always On** |
+| SSD für Linux sichtbar machen | Advanced → SATA Configuration → **SATA Mode** | **AHCI** (nicht „RAID“/„Intel RST“) |
+| Secure Boot | Security → Secure Boot Configuration → **Secure Boot Control** | **Disabled** (nur nötig, falls du später den UVC-Hack brauchst) |
+| Schnellerer Start (optional) | Boot → **Fast Boot** | **Enabled** |
 
-Speichern mit **Apply** → **Exit**.
+Speichern mit **F10** → **Yes**.
 
-> ⚠️ Steht SATA Operation auf „RAID On“, findet der Debian-Installer die NVMe-SSD nicht.
+> Die genauen Menünamen können je nach BIOS-Version leicht abweichen. Die Einstellung zum Einschalten bei Strom heißt bei Fujitsu „Power Failure Recovery“; „Previous State“ reicht nicht, wenn der PC per Power-Taste ausgeschaltet wurde.
+
+> 🔥 Falls du den CPU-Kühler abgenommen hattest: Vor dem ersten Start **neue Wärmeleitpaste** auftragen, Kühler fest verschrauben und den Lüfter an **FAN1** anschließen.
 
 ### 1.4 Debian installieren
 
-USB-Stick einstecken, einschalten, **F12** drücken und den USB-Stick (UEFI) wählen.
+USB-Stick einstecken, einschalten und sobald das Fujitsu-Logo erscheint mehrmals **F12** drücken
+(60-%-Tastatur: meist **Fn + =**). Im Boot-Menü den Eintrag mit **„UEFI:“ + Name des USB-Sticks** wählen.
+
+> Kommt das Boot-Menü nicht: ins BIOS (**F2**) → **Boot** → den USB-Stick in der Boot-Reihenfolge nach oben schieben → **F10** speichern.
 
 1. **Install** (nicht „Graphical install“ – ist egal, Text geht schneller)
 2. Sprache **Deutsch**, Standort **Deutschland**, Tastatur **Deutsch**
@@ -62,13 +68,13 @@ USB-Stick einstecken, einschalten, **F12** drücken und den USB-Stick (UEFI) wä
 Danach landest du an einer schwarzen Konsole und meldest dich mit deinem Benutzer an.
 
 > 💡 Ab hier kannst du auch bequem vom Laptop aus weitermachen:
-> `ssh darts@<IP>` (die IP zeigt `hostname -I` am OptiPlex an). Nach dem Skript geht auch `ssh darts@autodarts.local`.
+> `ssh darts@<IP>` (die IP zeigt `hostname -I` am ESPRIMO an). Nach dem Skript geht auch `ssh darts@autodarts.local`.
 
 ---
 
 ## 2. Autodarts-Kiosk installieren
 
-Am OptiPlex (oder per SSH):
+Am ESPRIMO (oder per SSH):
 
 ```bash
 sudo apt update && sudo apt install -y git
@@ -112,7 +118,7 @@ Das Skript kann jederzeit erneut ausgeführt werden, z. B. nach einem Logo-Wechs
 ## 3. Nach dem ersten Neustart
 
 1. **Board einrichten:** Von einem anderen Gerät im selben Netzwerk den Board Manager öffnen:
-   `http://<IP-des-OptiPlex>:3180` → Kameras kalibrieren und das Board mit deinem Autodarts-Konto verbinden.
+   `http://<IP-des-ESPRIMO>:3180` → Kameras kalibrieren und das Board mit deinem Autodarts-Konto verbinden.
 2. **Im Kiosk anmelden:** Einmalig mit Tastatur bei play.autodarts.io einloggen. Die Anmeldung bleibt gespeichert.
 3. **Test:** Stecker ziehen, wieder einstecken → PC startet von selbst bis in den Vollbild-Kiosk.
 
@@ -131,6 +137,7 @@ Das Skript kann jederzeit erneut ausgeführt werden, z. B. nach einem Logo-Wechs
 
 **Hinweise**
 
-- Das **Dell-Logo** beim Einschalten kommt aus dem BIOS und lässt sich nicht ersetzen. Mit *Fastboot → Minimal* ist es nur kurz zu sehen; danach erscheint dein eigenes Logo.
+- Das **Fujitsu-Logo** beim Einschalten kommt aus dem BIOS und lässt sich nicht ersetzen. Mit *Fast Boot* ist es nur kurz zu sehen; danach erscheint dein eigenes Logo.
+- **WLAN:** Für die eingebaute Qualcomm/Atheros-Karte (z. B. Dell DW1810) installiert das Skript `firmware-atheros`. LAN ist für Autodarts aber stabiler. WLAN richtest du nach der Installation mit `sudo nmtui` ein – oder gleich im Debian-Installer.
 - Die drei Kameras möglichst auf **verschiedene USB-Ports** verteilen (nicht alle über einen Hub).
 - Hartes Abschalten über den Strom ist meistens kein Problem, sauberer ist aber die Power-Taste.

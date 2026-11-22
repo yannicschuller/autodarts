@@ -61,11 +61,13 @@ apt-get install -y \
   cage chromium \
   plymouth plymouth-themes \
   pipewire pipewire-pulse wireplumber \
-  fonts-dejavu-core avahi-daemon \
+  fonts-dejavu-core avahi-daemon network-manager \
   unattended-upgrades
-# Intel-GPU-Firmware (liegt in non-free-firmware, ist nicht zwingend nötig)
-apt-get install -y firmware-misc-nonfree 2>/dev/null \
-  || c_warn "firmware-misc-nonfree nicht verfügbar – nicht schlimm."
+# Firmware für Intel-GPU und Qualcomm/Atheros-WLAN (liegt in non-free-firmware)
+for fw in firmware-misc-nonfree firmware-atheros; do
+  apt-get install -y "$fw" 2>/dev/null \
+    || c_warn "$fw nicht verfügbar – nicht schlimm."
+done
 c_ok "Pakete installiert"
 
 # Benutzer braucht Zugriff auf GPU, Kameras und Audio
@@ -268,8 +270,8 @@ $(printf '\033[1;32m')==========================================================
 Noch von Hand zu erledigen:
 
   1. BIOS: Einschalten bei Stromzufuhr
-     Beim Start F2 drücken →  Power Management → AC Recovery → "Power On"
-     (Optional: POST Behavior → Fastboot → "Minimal" für schnelleren Start)
+     Beim Start F2 drücken →  Power → Power Failure Recovery → "Always On"
+     (Optional: Boot → Fast Boot → "Enabled" für schnelleren Start)
 
   2. Board einrichten
      Board Manager von einem anderen Gerät öffnen:  http://${IP:-<IP-des-PCs>}:3180
